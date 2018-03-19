@@ -20,3 +20,6 @@ class Schedule(BaseModel):
         null = True,
         blank = True
     )
+
+    def __str__(self):
+        return '%s vs %s' %(self.team_local.name,self.team_visit.name)

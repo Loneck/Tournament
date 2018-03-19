@@ -22,3 +22,6 @@ class Leaderboard(BaseModel):
     tie = models.IntegerField(
         default=0
     )
+
+    def __str__(self):
+        return self.team.name
