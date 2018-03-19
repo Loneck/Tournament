@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-2">
+
+    </div>
+    <div class="col-8">
+        <h1><u>Leaderboard</u></h1>
+        <br>
+        <table class="table table-bordered table-hover">
+            <tr>
+                <th>Team</th>
+                <th>Points</th>
+                <th>Win</th>
+                <th>Tie</th>
+                <th>Lose</th>
+            </tr>
+            {% for ranking in object_list %}
+            <tr>                
+                <td>{{ ranking.team }}</td>
+                <td>{{ ranking.points }}</td>
+                <td>{{ ranking.win }}</td>
+                <td>{{ ranking.tie }}</td>
+                <td>{{ ranking.lose }}</td>
+                {% empty %}
+                <li>No rankings yet.</li>               
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="col-2">
+
+    </div>
+</div>
+{% endblock %}

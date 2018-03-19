@@ -19,6 +19,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^', include('tournament.apps.leaderboard.urls')),
 ]
 
 if settings.DEBUG:
