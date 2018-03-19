@@ -1,0 +1,138 @@
+# -*- coding: utf-8 -*-
+import json
+import uuid
+
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db import models
+from django.db.models import Count
+from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
+
+from .managers import BaseManager
+
+
+def upload_to(path):
+    uuid_4 = str(uuid.uuid4())
+    uuid_cut = uuid_4[:8]
+    return '%s%s/' % (path, uuid_cut)
+
+
+class ModelEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, models.fields.files.FieldFile):
+            if obj:
+                return obj.url
+            else:
+                return None
+
+        return super(ModelEncoder, self).default(obj)
+
+
+class BaseModel(models.Model):
+    """ An abstract class that every model should inherit from """
+    BOOLEAN_CHOICES = ((False, _(u'No')), (True, _(u'Yes')))
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text=_('creation date'),
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True, null=True,
+        help_text=_('edition date'),
+    )
+
+    # using BaseManager
+    objects = BaseManager()
+
+    class Meta:
+        abstract = True
+
+    # public methods
+    def file_path(self, name):
+        """
+        Generic method to give to a FileField or ImageField in it's upload_to
+        parameter.
+
+        This returns the name of the class, concatenated with the id of the
+        object and the name of the file.
+        """
+        base_path = "{}/{}/{}"
+
+        return base_path.format(self.__class__.__name__, name)
+
+    def update(self, **kwargs):
+        """ proxy method for the QuerySet: update method
+        highly recommended when you need to save just one field
+
+        """
+        kwargs['updated_at'] = timezone.now()
+
+        for kw in kwargs:
+            self.__setattr__(kw, kwargs[kw])
+
+        self.__class__.objects.filter(pk=self.pk).update(**kwargs)
+
+    def to_dict(instance, fields=None, exclude=None):
+        """
+        Returns a dict containing the data in ``instance``
+
+        ``fields`` is an optional list of field names. If provided, only the
+        named fields will be included in the returned dict.
+
+        ``exclude`` is an optional list of field names. If provided, the named
+        fields will be excluded from the returned dict, even if they are listed
+        in the ``fields`` argument.
+        """
+
+        opts = instance._meta
+        data = {}
+        for f in opts.fields + opts.many_to_many:
+            if fields and f.name not in fields:
+                continue
+            if exclude and f.name in exclude:
+                continue
+            if isinstance(f, models.fields.related.ManyToManyField):
+                # If the object doesn't have a primary key yet, just use an
+                # emptylist for its m2m fields. Calling f.value_from_object
+                # will raise an exception.
+                if instance.pk is None:
+                    data[f.name] = []
+                else:
+                    # MultipleChoiceWidget needs a list of pks, not objects.
+                    data[f.name] = list(
+                        f.value_from_object(instance).values_list('pk',
+                                                                  flat=True))
+            else:
+                data[f.name] = f.value_from_object(instance)
+        return data
+
+    def to_json(self, fields=None, exclude=None, **kargs):
+        """
+        Returns a string containing the data in of the instance in json format
+
+        ``fields`` is an optional list of field names. If provided, only the
+        named fields will be included in the returned dict.
+
+        ``exclude`` is an optional list of field names. If provided, the named
+        fields will be excluded from the returned dict, even if they are listed
+        in the ``fields`` argument.
+
+        kwargs are optional named parameters for the json.dumps method
+        """
+        # obtain a dict of the instance data
+        data = self.to_dict(fields=fields, exclude=exclude)
+
+        # turn the dict to json
+        return json.dumps(data, cls=ModelEncoder, **kargs)
+
+    def refresh(self):
+        """
+        returns a new object of the same class as the caller, with it's
+        data taken form the database
+        """
+        return self.__class__.objects.get(id=self.id)
+
+    @classmethod
+    def find_duplicates(cls, *fields):
+        duplicates = cls.objects.values(*fields).annotate(Count('id'))
+        return duplicates.order_by().filter(id__count__gt=1)
