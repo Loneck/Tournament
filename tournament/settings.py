@@ -25,7 +25,9 @@ SECRET_KEY = 'qu$ovoakdwk0w-@d@a-%rsbnsext%=c56cb5_2$v2)efhn7%(5'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'loneck-tournament.herokuapp.com'
+]
 
 
 # Application definition
