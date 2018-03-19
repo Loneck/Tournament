@@ -26,7 +26,8 @@ SECRET_KEY = 'qu$ovoakdwk0w-@d@a-%rsbnsext%=c56cb5_2$v2)efhn7%(5'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'loneck-tournament.herokuapp.com'
+    '127.0.0.1',
+    'loneck-tournament.herokuapp.com',
 ]
 
 
@@ -141,3 +142,6 @@ USE_TZ = True
 # STATIC_URL = '/static/'
 STATIC_URL = os.getenv('STATIC_URL', '/static/')
 STATIC_ROOT = os.getenv('STATIC_ROOT', os.path.join(BASE_DIR, 'static'))
+
+# Activate Django-Heroku.
+django_heroku.settings(locals())
